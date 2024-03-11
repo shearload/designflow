@@ -25,7 +25,7 @@ st.markdown("")
 
 st.markdown("This is a simple Streamlit app to design a concrete corbel.")
 
-st.image("corbel_icon2.png", caption="Corbel Diagram")
+st.image("corbel_icon.png", caption="Corbel Diagram")
 
 # User input - Sidebar
 user_input_text = st.sidebar.text_input("Enter project name:", "VIE23 P017")
