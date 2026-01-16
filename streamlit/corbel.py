@@ -20,7 +20,7 @@ st.set_page_config(page_title="Corbel Designer", page_icon=":heart:")
 st.title("Corbel Design App")
 st.markdown("")
 st.markdown("")
-st.markdown("v1.0 | Written by: Wyeth Binder | Verified by: Name, Surname")
+st.markdown("v1.1 | Written by: Wyeth Binder | Verified by: Name, Surname")
 st.markdown("")
 
 st.markdown("This is a simple Streamlit app to design a concrete corbel.")
@@ -65,7 +65,7 @@ if uploaded_file is not None:
 
 length = len(st.session_state.df["H"])
 
-
+st.markdown("---")
 # Calculation section
 st.subheader("Calculation")
 
@@ -87,33 +87,32 @@ st.write("Corbel calculation type = ", type)
 # calculation per Schneider 20. [5.124] eqs 5.11 and 5.24
 # for row in st.session_state.df:
 # V = st.session_state.df["V"]
-V = pd.to_numeric(st.session_state.df["V"]) #typecast to float from string or whatever streamlit has as input
+h = pd.to_numeric(st.session_state.df["V"]) #typecast to float from string or whatever streamlit has as input
 # H = st.session_state.df["H"]
-H = pd.to_numeric(st.session_state.df["H"])
+v = pd.to_numeric(st.session_state.df["H"])
 
 st.write("Concrete Grade = C50/60")
 st.write("Steel Grade = B500B")
 fck = 50 #50Mpa = 5kN/cm2 for C50/60 concrete
 fy = 500 # for B500B steel grade
 fyd = 500/1.15 
-Vrd = (0.5*(0.7-fck/200)*(column_width*10/2)*(corbel_height*10)*fck/1.50)/1000 #calc conc. strut with V_Rdmax = 0,5*(0,7-fck/200)*b*z*fck/gammaC (in KN)
+vrd = (0.5*(0.7-fck/200)*(column_width*10/2)*(corbel_height*10)*fck/1.50)/1000 #calc conc. strut with V_Rdmax = 0,5*(0,7-fck/200)*b*z*fck/gammaC (in KN)
 #st.write("vrd ", Vrd)
 
 cover = 5 #5cm concrete cover
 d = corbel_height - cover
 ac = corbel_depth - pad_offset #cm
-z0 = d*(1-0.4*(V.divide(Vrd))) # use .divde() method on pd dataframes
+z0 = d*(1-0.4*(v.divide(vrd))) # use .divde() method on pd dataframes
 #st.write("z0 ", z0)
 
-Zed = V*(ac/z0) + H*((cover+z0)/z0) #units in cm
+zed = v*(ac/z0) + h*((cover+z0)/z0) #units in cm
 #st.write("zed ", Zed)
 
-As1 = (Zed/fyd)*100 # in cm2
-As2 = As1*0.5 #in cm2
+as1 = (zed/fyd)*100 # in cm2
+as2 = as1*0.5 #in cm2
 
 # Results
-st.markdown("---")
-st.write("Calculated Rebar Amounts [cm2]")
+st.write("Run Rebar Calculation")
 
 run = st.button('Submit')
 
@@ -121,17 +120,39 @@ if run:
 
     column_tag = np.full((length), str(column_width) + " x " + str(column_width))
     df_results = pd.DataFrame({'Column Size':column_tag,
-                               'As Anchorage': As1.round(2),
-                               'As Stirrups': As2.round(2)})
+                               'As Anchorage [cm2]': as1.round(2),
+                               'As Stirrups [cm2]': as2.round(2)})
 
     st.write(pd.concat([st.session_state.df,df_results],axis=1))
 
     st.write(f"Calculated Locations: {st.session_state.df.shape[0]}")
-    maximum = df_results['As Anchorage'].idxmax()
+    maximum = df_results['As Anchorage [cm2]'].idxmax()
     st.write(f"Max As Anchorage Location: {st.session_state.df['Location'].iloc[maximum]}")
+
+st.markdown("---")
+st.subheader("Show Calculation Steps")
+
+run_steps = st.button('Show Steps')
+if run_steps:
+    st.write("Calculation Steps")
+    results_map = [
+        {"label": "Concrete Strut Capacity ($V_{Rd,max}$)", "code": "Vrd = (0.5*(0.7-fck/200)*(b*10/2)*(h*10)*fck/1.50)/1000", "value": round(vrd,2)},
+        {"label": "Internal Lever Arm ($z_0$)", "code": "z0 = d*(1-0.4*(V/Vrd))", "value": z0},
+        {"label": "Tensile Force ($Z_{ed}$)", "code": "Zed = V*(ac/z0) + H*((cover+z0)/z0)", "value": zed},
+        {"label": "Primary Rebar ($As_1$)", "code": "As1 = (Zed/fyd)*100", "value": as1},
+        {"label": "Secondary Rebar ($As_2$)", "code": "As2 = As1 * 0.5", "value": as2},
+    ]
+
+    for item in results_map:
+        with st.container():
+            st.markdown(f"#### {item['label']}")
+            st.code(item['code'], language="python")
+            st.write("Current Value(s):")
+            st.write(item['value'])
+            st.divider()
 
 
 # Footer
 st.markdown("---")
-st.markdown("W. Binder, 2024")
+st.markdown("W. Binder, 2026")
 
